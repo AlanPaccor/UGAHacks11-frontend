@@ -12,12 +12,17 @@ export const addProduct = (product: object) => API.post("/products", product);
 
 // ── Inventory Transaction Endpoints ──
 export const checkoutProduct = (barcode: string, quantity: number) =>
-  API.put(`/products/barcode/${barcode}/checkout`, { quantity });
+  API.post("/inventory/checkout", { barcode, quantity });
 
 export const restockProduct = (barcode: string, quantity: number) =>
-  API.put(`/products/barcode/${barcode}/restock`, { quantity });
+  API.post("/inventory/restock", { barcode, quantity });
 
 export const logWaste = (barcode: string, quantity: number) =>
-  API.put(`/products/barcode/${barcode}/waste`, { quantity });
+  API.post("/inventory/waste", { barcode, quantity });
+
+// ── Waste History ──
+export const getWasteHistory = () => API.get("/inventory/waste");
+export const getWasteHistoryByBarcode = (barcode: string) =>
+  API.get(`/inventory/waste/${barcode}`);
 
 export default API;
