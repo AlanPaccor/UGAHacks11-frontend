@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { getProducts } from "./services/api";
 import InventoryManager from "./components/InventoryManager";
 import AnalyticsDashboard from "./components/AnalyticsDashboard";
+import AIInsightsCard from "./components/AIInsightsCard";
 import AIPredictionCard from "./components/AIPredictionCard";
 import type { Product } from "./types/Product";
 
@@ -26,6 +27,9 @@ function App() {
 
       {/* ── Scanner & Actions ── */}
       <InventoryManager onTransactionComplete={fetchProducts} />
+
+      {/* ── AI Insights (Gemini) ── */}
+      <AIInsightsCard />
 
       {/* ── Analytics Dashboard ── */}
       <AnalyticsDashboard products={products} />

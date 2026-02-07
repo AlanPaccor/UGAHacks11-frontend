@@ -38,4 +38,7 @@ export const getTransactionsByBarcode = (barcode: string) =>
 export const getTransactionsByProductId = (productId: string) =>
   API.get(`/inventory/transactions/product/${productId}`);
 
+// ── AI Analytics (Gemini) ──
+export const getAIInsights = () => API.get("/analytics/ai-insights");
+
 export default API;
