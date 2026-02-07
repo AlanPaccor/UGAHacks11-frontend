@@ -25,4 +25,14 @@ export const getWasteHistory = () => API.get("/inventory/waste");
 export const getWasteHistoryByBarcode = (barcode: string) =>
   API.get(`/inventory/waste/${barcode}`);
 
+// ── Transaction History / Analytics ──
+export const getRecentTransactions = () =>
+  API.get("/inventory/transactions/recent");
+
+export const getTransactionsByBarcode = (barcode: string) =>
+  API.get(`/inventory/transactions/barcode/${barcode}`);
+
+export const getTransactionsByProductId = (productId: string) =>
+  API.get(`/inventory/transactions/product/${productId}`);
+
 export default API;
