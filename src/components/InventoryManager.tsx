@@ -4,11 +4,12 @@ import {
   getProductByBarcode,
   checkoutProduct,
   restockProduct,
+  receiveProduct,
   logWaste,
 } from "../services/api";
 import type { Product } from "../types/Product";
 
-type ActionType = "checkout" | "restock" | "waste" | null;
+type ActionType = "checkout" | "restock" | "receive" | "waste" | null;
 
 interface Props {
   onTransactionComplete: () => void;
@@ -125,7 +126,13 @@ export default function InventoryManager({ onTransactionComplete }: Props) {
         case "restock":
           await restockProduct(product.barcode, quantity);
           setMessage(
-            `✅ Restocked ${quantity} × ${product.name} to front shelves.`
+            `✅ Moved ${quantity} × ${product.name} from back → front shelves.`
+          );
+          break;
+        case "receive":
+          await receiveProduct(product.barcode, quantity);
+          setMessage(
+            `✅ Received ${quantity} × ${product.name} into back storage.`
           );
           break;
         case "waste":
@@ -278,10 +285,10 @@ export default function InventoryManager({ onTransactionComplete }: Props) {
             </div>
 
             {/* ── Action Buttons ── */}
-            <div className="flex gap-3 mt-5">
+            <div className="grid grid-cols-2 gap-3 mt-5">
               <button
                 onClick={() => setAction("checkout")}
-                className={`flex-1 py-2 rounded-lg font-semibold transition-colors ${
+                className={`py-2 rounded-lg font-semibold transition-colors ${
                   action === "checkout"
                     ? "bg-blue-600 text-white"
                     : "bg-blue-100 text-blue-700 hover:bg-blue-200"
@@ -290,18 +297,28 @@ export default function InventoryManager({ onTransactionComplete }: Props) {
                 🛒 Checkout
               </button>
               <button
+                onClick={() => setAction("receive")}
+                className={`py-2 rounded-lg font-semibold transition-colors ${
+                  action === "receive"
+                    ? "bg-green-600 text-white"
+                    : "bg-green-100 text-green-700 hover:bg-green-200"
+                }`}
+              >
+                📥 Receive Stock
+              </button>
+              <button
                 onClick={() => setAction("restock")}
-                className={`flex-1 py-2 rounded-lg font-semibold transition-colors ${
+                className={`py-2 rounded-lg font-semibold transition-colors ${
                   action === "restock"
                     ? "bg-amber-600 text-white"
                     : "bg-amber-100 text-amber-700 hover:bg-amber-200"
                 }`}
               >
-                📦 Restock
+                📦 Restock (Back → Front)
               </button>
               <button
                 onClick={() => setAction("waste")}
-                className={`flex-1 py-2 rounded-lg font-semibold transition-colors ${
+                className={`py-2 rounded-lg font-semibold transition-colors ${
                   action === "waste"
                     ? "bg-red-600 text-white"
                     : "bg-red-100 text-red-700 hover:bg-red-200"

@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: "", // proxied through Vite dev server
+  baseURL: "http://localhost:8080", // proxied through Vite dev server
 });
 
 // ── Product Endpoints ──
@@ -19,6 +19,9 @@ export const restockProduct = (barcode: string, quantity: number) =>
 
 export const logWaste = (barcode: string, quantity: number, location: "FRONT" | "BACK") =>
   API.post("/inventory/waste", { barcode, quantity, location });
+
+export const receiveProduct = (barcode: string, quantity: number) =>
+  API.post("/inventory/receive", { barcode, quantity });
 
 // ── Waste History ──
 export const getWasteHistory = () => API.get("/inventory/waste");
