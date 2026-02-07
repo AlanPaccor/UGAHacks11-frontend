@@ -3,7 +3,7 @@ export interface Transaction {
   productId: string;
   barcode: string;
   productName: string;
-  transactionType: "CHECKOUT" | "RESTOCK" | "WASTE";
+  transactionType: "CHECKOUT" | "RESTOCK" | "WASTE" | "RECEIVE";
   quantity: number;
   location: string;
   createdAt: string;
