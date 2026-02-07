@@ -1,30 +1,31 @@
-import { useEffect, useState } from "react";
-import API from "./services/api";
-
-interface Product {
-  id?: string;
-  barcode: string;
-  name: string;
-  frontQuantity: number;
-  backQuantity: number;
-  wasteQuantity: number;
-  reorderThreshold: number;
-}
+import { useEffect, useState, useCallback } from "react";
+import { getProducts } from "./services/api";
+import InventoryManager from "./components/InventoryManager";
+import type { Product } from "./types/Product";
 
 function App() {
   const [products, setProducts] = useState<Product[]>([]);
 
-  useEffect(() => {
-    API.get("/products")
+  const fetchProducts = useCallback(() => {
+    getProducts()
       .then((res) => setProducts(res.data))
       .catch((err) => console.error(err));
   }, []);
+
+  useEffect(() => {
+    fetchProducts();
+  }, [fetchProducts]);
 
   return (
     <div className="min-h-screen bg-gray-100 p-8">
       <h1 className="text-4xl font-bold text-center text-gray-800 mb-8">
         🛒 Inventory
       </h1>
+
+      {/* ── Scanner & Actions ── */}
+      <InventoryManager onTransactionComplete={fetchProducts} />
+
+      {/* ── Product Dashboard ── */}
       {products.length === 0 ? (
         <p className="text-center text-gray-500">Loading products...</p>
       ) : (
@@ -41,15 +42,25 @@ function App() {
                 Barcode: {product.barcode}
               </p>
               <div className="mt-4 space-y-1 text-sm text-gray-600">
-                <p>Front: <span className="font-medium">{product.frontQuantity}</span></p>
-                <p>Back: <span className="font-medium">{product.backQuantity}</span></p>
-                <p>Waste: <span className="font-medium">{product.wasteQuantity}</span></p>
+                <p>
+                  Front:{" "}
+                  <span className="font-medium">{product.frontQuantity}</span>
+                </p>
+                <p>
+                  Back:{" "}
+                  <span className="font-medium">{product.backQuantity}</span>
+                </p>
+                <p>
+                  Waste:{" "}
+                  <span className="font-medium">{product.wasteQuantity}</span>
+                </p>
               </div>
               <div className="mt-4 flex items-center justify-between">
                 <span className="text-xs text-gray-400">
                   Reorder at ≤ {product.reorderThreshold}
                 </span>
-                {product.frontQuantity + product.backQuantity <= product.reorderThreshold ? (
+                {product.frontQuantity + product.backQuantity <=
+                product.reorderThreshold ? (
                   <span className="text-xs font-semibold text-red-600 bg-red-100 px-2 py-1 rounded-full">
                     Low Stock
                   </span>
