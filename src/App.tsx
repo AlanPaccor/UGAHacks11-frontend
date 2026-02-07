@@ -2,10 +2,13 @@ import { useEffect, useState } from "react";
 import API from "./services/api";
 
 interface Product {
-  _id: string;
+  id?: string;
+  barcode: string;
   name: string;
-  price: number;
-  description?: string;
+  frontQuantity: number;
+  backQuantity: number;
+  wasteQuantity: number;
+  reorderThreshold: number;
 }
 
 function App() {
@@ -20,7 +23,7 @@ function App() {
   return (
     <div className="min-h-screen bg-gray-100 p-8">
       <h1 className="text-4xl font-bold text-center text-gray-800 mb-8">
-        🛒 Products
+        🛒 Inventory
       </h1>
       {products.length === 0 ? (
         <p className="text-center text-gray-500">Loading products...</p>
@@ -28,18 +31,34 @@ function App() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
           {products.map((product) => (
             <div
-              key={product._id}
+              key={product.barcode}
               className="bg-white rounded-2xl shadow-md p-6 hover:shadow-lg transition-shadow"
             >
               <h2 className="text-xl font-semibold text-gray-800">
                 {product.name}
               </h2>
-              {product.description && (
-                <p className="text-gray-500 mt-2">{product.description}</p>
-              )}
-              <p className="text-green-600 font-bold text-lg mt-4">
-                ${product.price.toFixed(2)}
+              <p className="text-sm text-gray-400 mt-1">
+                Barcode: {product.barcode}
               </p>
+              <div className="mt-4 space-y-1 text-sm text-gray-600">
+                <p>Front: <span className="font-medium">{product.frontQuantity}</span></p>
+                <p>Back: <span className="font-medium">{product.backQuantity}</span></p>
+                <p>Waste: <span className="font-medium">{product.wasteQuantity}</span></p>
+              </div>
+              <div className="mt-4 flex items-center justify-between">
+                <span className="text-xs text-gray-400">
+                  Reorder at ≤ {product.reorderThreshold}
+                </span>
+                {product.frontQuantity + product.backQuantity <= product.reorderThreshold ? (
+                  <span className="text-xs font-semibold text-red-600 bg-red-100 px-2 py-1 rounded-full">
+                    Low Stock
+                  </span>
+                ) : (
+                  <span className="text-xs font-semibold text-green-600 bg-green-100 px-2 py-1 rounded-full">
+                    In Stock
+                  </span>
+                )}
+              </div>
             </div>
           ))}
         </div>
