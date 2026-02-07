@@ -17,8 +17,8 @@ export const checkoutProduct = (barcode: string, quantity: number) =>
 export const restockProduct = (barcode: string, quantity: number) =>
   API.post("/inventory/restock", { barcode, quantity });
 
-export const logWaste = (barcode: string, quantity: number) =>
-  API.post("/inventory/waste", { barcode, quantity });
+export const logWaste = (barcode: string, quantity: number, location: "FRONT" | "BACK") =>
+  API.post("/inventory/waste", { barcode, quantity, location });
 
 // ── Waste History ──
 export const getWasteHistory = () => API.get("/inventory/waste");

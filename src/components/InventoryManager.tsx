@@ -20,6 +20,7 @@ export default function InventoryManager({ onTransactionComplete }: Props) {
   const [product, setProduct] = useState<Product | null>(null);
   const [action, setAction] = useState<ActionType>(null);
   const [quantity, setQuantity] = useState(1);
+  const [wasteLocation, setWasteLocation] = useState<"FRONT" | "BACK">("FRONT");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -128,9 +129,9 @@ export default function InventoryManager({ onTransactionComplete }: Props) {
           );
           break;
         case "waste":
-          await logWaste(product.barcode, quantity);
+          await logWaste(product.barcode, quantity, wasteLocation);
           setMessage(
-            `✅ Logged ${quantity} × ${product.name} as waste.`
+            `✅ Logged ${quantity} × ${product.name} as waste from ${wasteLocation}.`
           );
           break;
       }
@@ -141,6 +142,7 @@ export default function InventoryManager({ onTransactionComplete }: Props) {
       onTransactionComplete();
       setAction(null);
       setQuantity(1);
+      setWasteLocation("FRONT");
     } catch {
       setError("Transaction failed. Check backend logs.");
     } finally {
@@ -154,6 +156,7 @@ export default function InventoryManager({ onTransactionComplete }: Props) {
     setProduct(null);
     setAction(null);
     setQuantity(1);
+    setWasteLocation("FRONT");
     setMessage("");
     setError("");
     barcodeInputRef.current?.focus();
@@ -308,35 +311,67 @@ export default function InventoryManager({ onTransactionComplete }: Props) {
               </button>
             </div>
 
-            {/* ── Quantity + Confirm ── */}
+            {/* ── Quantity + Location + Confirm ── */}
             {action && (
-              <div className="flex items-center gap-3 mt-4">
-                <label className="text-sm text-gray-600 font-medium">
-                  Qty:
-                </label>
-                <input
-                  type="number"
-                  min={1}
-                  value={quantity}
-                  onChange={(e) => setQuantity(Number(e.target.value))}
-                  className="w-20 border border-gray-300 rounded-lg px-3 py-2 text-center focus:outline-none focus:ring-2 focus:ring-blue-400"
-                />
-                <button
-                  onClick={handleConfirm}
-                  disabled={loading}
-                  className="flex-1 bg-green-600 text-white py-2 rounded-lg font-semibold hover:bg-green-700 transition-colors disabled:opacity-50"
-                >
-                  {loading ? "Processing…" : "✔ Confirm"}
-                </button>
-                <button
-                  onClick={() => {
-                    setAction(null);
-                    setQuantity(1);
-                  }}
-                  className="px-4 py-2 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors"
-                >
-                  Cancel
-                </button>
+              <div className="mt-4 space-y-3">
+                {/* Waste location picker */}
+                {action === "waste" && (
+                  <div className="flex items-center gap-3">
+                    <label className="text-sm text-gray-600 font-medium">
+                      From:
+                    </label>
+                    <button
+                      onClick={() => setWasteLocation("FRONT")}
+                      className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-colors ${
+                        wasteLocation === "FRONT"
+                          ? "bg-red-600 text-white"
+                          : "bg-red-100 text-red-700 hover:bg-red-200"
+                      }`}
+                    >
+                      Front Shelf
+                    </button>
+                    <button
+                      onClick={() => setWasteLocation("BACK")}
+                      className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-colors ${
+                        wasteLocation === "BACK"
+                          ? "bg-red-600 text-white"
+                          : "bg-red-100 text-red-700 hover:bg-red-200"
+                      }`}
+                    >
+                      Back Storage
+                    </button>
+                  </div>
+                )}
+
+                <div className="flex items-center gap-3">
+                  <label className="text-sm text-gray-600 font-medium">
+                    Qty:
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={quantity}
+                    onChange={(e) => setQuantity(Number(e.target.value))}
+                    className="w-20 border border-gray-300 rounded-lg px-3 py-2 text-center focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  />
+                  <button
+                    onClick={handleConfirm}
+                    disabled={loading}
+                    className="flex-1 bg-green-600 text-white py-2 rounded-lg font-semibold hover:bg-green-700 transition-colors disabled:opacity-50"
+                  >
+                    {loading ? "Processing…" : "✔ Confirm"}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setAction(null);
+                      setQuantity(1);
+                      setWasteLocation("FRONT");
+                    }}
+                    className="px-4 py-2 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
               </div>
             )}
           </div>
