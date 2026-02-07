@@ -22,7 +22,8 @@ export default function AIInsightsCard() {
   };
 
   // Parse markdown-like sections from the analysis text
-  const renderAnalysis = (text: string) => {
+  const renderAnalysis = (text: string | undefined | null) => {
+    if (!text) return <p className="text-sm text-gray-500">No analysis available.</p>;
     const lines = text.split("\n");
     return lines.map((line, i) => {
       // Bold headers (** **)
