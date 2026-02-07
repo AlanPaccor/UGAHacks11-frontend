@@ -276,7 +276,7 @@ export default function InventoryManager({ onTransactionComplete }: Props) {
               </div>
               <div className="bg-white rounded-lg p-3 shadow-sm">
                 <p className="text-xs text-gray-400 uppercase tracking-wide">
-                  Waste
+                  Discard
                 </p>
                 <p className="text-2xl font-bold text-red-500">
                   {product.wasteQuantity}
@@ -324,7 +324,7 @@ export default function InventoryManager({ onTransactionComplete }: Props) {
                     : "bg-red-100 text-red-700 hover:bg-red-200"
                 }`}
               >
-                🗑️ Waste
+                🗑️ Discard
               </button>
             </div>
 

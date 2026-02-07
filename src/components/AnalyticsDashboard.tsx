@@ -128,7 +128,7 @@ export default function AnalyticsDashboard({ products }: Props) {
           <Trash2 className="w-5 h-5 text-red-500 mx-auto mb-1" />
           <p className="text-2xl font-bold text-gray-800">{totalWaste}</p>
           <p className="text-xs text-gray-400 uppercase tracking-wide">
-            Wasted
+            Discard
           </p>
         </div>
         <div className="bg-white rounded-xl shadow-sm p-4 text-center">
