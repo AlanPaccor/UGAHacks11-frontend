@@ -12,11 +12,13 @@ import {
   Cell,
 } from "recharts";
 import {
-  Activity,
+  BarChart3,
   ShoppingCart,
   PackageOpen,
   Trash2,
+  Activity,
   Clock,
+  AlertTriangle,
 } from "lucide-react";
 import { getRecentTransactions } from "../services/api";
 import type { Transaction } from "../types/Transaction";
@@ -27,7 +29,7 @@ interface Props {
 }
 
 const TYPE_COLORS: Record<string, string> = {
-  CHECKOUT: "#3b82f6",
+  CHECKOUT: "#6366f1",
   RESTOCK: "#f59e0b",
   WASTE: "#ef4444",
 };
@@ -36,6 +38,12 @@ const TYPE_ICONS: Record<string, React.ReactNode> = {
   CHECKOUT: <ShoppingCart className="w-4 h-4" />,
   RESTOCK: <PackageOpen className="w-4 h-4" />,
   WASTE: <Trash2 className="w-4 h-4" />,
+};
+
+const TYPE_LABELS: Record<string, string> = {
+  CHECKOUT: "Sale",
+  RESTOCK: "Restock",
+  WASTE: "Discard",
 };
 
 function timeAgo(dateStr: string): string {
@@ -58,19 +66,15 @@ export default function AnalyticsDashboard({ products }: Props) {
       .then((res) => setTransactions(res.data))
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, [products]); // re-fetch when products change (after a transaction)
+  }, [products]);
 
-  // ── derived data ──
-
-  // Inventory overview bar chart (per product: front vs back)
   const inventoryData = products.map((p) => ({
-    name: p.name.length > 12 ? p.name.slice(0, 12) + "…" : p.name,
+    name: p.name.length > 12 ? p.name.slice(0, 12) + "..." : p.name,
     Front: p.frontQuantity,
     Back: p.backQuantity,
-    Waste: p.wasteQuantity,
+    Discard: p.wasteQuantity,
   }));
 
-  // Transaction type breakdown for pie chart
   const typeCounts = transactions.reduce(
     (acc, t) => {
       acc[t.transactionType] = (acc[t.transactionType] || 0) + 1;
@@ -80,11 +84,11 @@ export default function AnalyticsDashboard({ products }: Props) {
   );
 
   const pieData = Object.entries(typeCounts).map(([name, value]) => ({
-    name,
+    name: TYPE_LABELS[name] || name,
     value,
+    key: name,
   }));
 
-  // Summary stats
   const totalCheckouts = transactions
     .filter((t) => t.transactionType === "CHECKOUT")
     .reduce((s, t) => s + Math.abs(t.quantity), 0);
@@ -95,82 +99,100 @@ export default function AnalyticsDashboard({ products }: Props) {
     .filter((t) => t.transactionType === "WASTE")
     .reduce((s, t) => s + Math.abs(t.quantity), 0);
 
-  // Low-stock alerts
   const lowStockProducts = products.filter(
     (p) => p.frontQuantity + p.backQuantity <= p.reorderThreshold
   );
 
   return (
-    <div className="max-w-5xl mx-auto mb-12 space-y-6">
-      {/* ── Section Header ── */}
-      <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-        <Activity className="w-6 h-6 text-blue-500" />
-        Analytics Dashboard
-      </h2>
-
-      {/* ── Stat Cards ── */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div className="bg-white rounded-xl shadow-sm p-4 text-center">
-          <ShoppingCart className="w-5 h-5 text-blue-500 mx-auto mb-1" />
-          <p className="text-2xl font-bold text-gray-800">{totalCheckouts}</p>
-          <p className="text-xs text-gray-400 uppercase tracking-wide">
-            Items Sold
-          </p>
-        </div>
-        <div className="bg-white rounded-xl shadow-sm p-4 text-center">
-          <PackageOpen className="w-5 h-5 text-amber-500 mx-auto mb-1" />
-          <p className="text-2xl font-bold text-gray-800">{totalRestocks}</p>
-          <p className="text-xs text-gray-400 uppercase tracking-wide">
-            Restocked
-          </p>
-        </div>
-        <div className="bg-white rounded-xl shadow-sm p-4 text-center">
-          <Trash2 className="w-5 h-5 text-red-500 mx-auto mb-1" />
-          <p className="text-2xl font-bold text-gray-800">{totalWaste}</p>
-          <p className="text-xs text-gray-400 uppercase tracking-wide">
-            Discard
-          </p>
-        </div>
-        <div className="bg-white rounded-xl shadow-sm p-4 text-center">
-          <Activity className="w-5 h-5 text-green-500 mx-auto mb-1" />
-          <p className="text-2xl font-bold text-gray-800">
-            {transactions.length}
-          </p>
-          <p className="text-xs text-gray-400 uppercase tracking-wide">
-            Transactions
-          </p>
-        </div>
+    <section className="space-y-5">
+      {/* Section Header */}
+      <div className="flex items-center gap-2">
+        <BarChart3 className="w-5 h-5 text-slate-400" />
+        <h2 className="text-lg font-semibold text-slate-900">
+          Analytics
+        </h2>
       </div>
 
-      {/* ── Charts Row ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Inventory Levels Bar Chart */}
-        <div className="bg-white rounded-xl shadow-sm p-5">
-          <h3 className="text-sm font-semibold text-gray-600 mb-4 uppercase tracking-wide">
+      {/* Stat Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        {[
+          {
+            icon: <ShoppingCart className="w-4 h-4" />,
+            value: totalCheckouts,
+            label: "Units Sold",
+            color: "text-indigo-600",
+            bg: "bg-indigo-50",
+          },
+          {
+            icon: <PackageOpen className="w-4 h-4" />,
+            value: totalRestocks,
+            label: "Restocked",
+            color: "text-amber-600",
+            bg: "bg-amber-50",
+          },
+          {
+            icon: <Trash2 className="w-4 h-4" />,
+            value: totalWaste,
+            label: "Discarded",
+            color: "text-red-600",
+            bg: "bg-red-50",
+          },
+          {
+            icon: <Activity className="w-4 h-4" />,
+            value: transactions.length,
+            label: "Transactions",
+            color: "text-emerald-600",
+            bg: "bg-emerald-50",
+          },
+        ].map((stat) => (
+          <div
+            key={stat.label}
+            className="bg-white border border-slate-200 rounded-xl p-4"
+          >
+            <div className="flex items-center justify-between mb-2">
+              <span className={`${stat.bg} ${stat.color} p-1.5 rounded-lg`}>
+                {stat.icon}
+              </span>
+            </div>
+            <p className="text-2xl font-bold text-slate-900">{stat.value}</p>
+            <p className="text-xs text-slate-400 mt-0.5">{stat.label}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="bg-white border border-slate-200 rounded-xl p-5">
+          <h3 className="text-xs font-semibold text-slate-500 mb-4 uppercase tracking-wide">
             Inventory Levels by Product
           </h3>
           {inventoryData.length > 0 ? (
             <ResponsiveContainer width="100%" height={260}>
               <BarChart data={inventoryData}>
-                <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-                <YAxis tick={{ fontSize: 11 }} />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="Front" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="Back" fill="#f59e0b" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="Waste" fill="#ef4444" radius={[4, 4, 0, 0]} />
+                <XAxis dataKey="name" tick={{ fontSize: 11, fill: "#94a3b8" }} />
+                <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} />
+                <Tooltip
+                  contentStyle={{
+                    borderRadius: "8px",
+                    border: "1px solid #e2e8f0",
+                    fontSize: "12px",
+                  }}
+                />
+                <Legend wrapperStyle={{ fontSize: "12px" }} />
+                <Bar dataKey="Front" fill="#6366f1" radius={[3, 3, 0, 0]} />
+                <Bar dataKey="Back" fill="#f59e0b" radius={[3, 3, 0, 0]} />
+                <Bar dataKey="Discard" fill="#ef4444" radius={[3, 3, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <p className="text-gray-400 text-sm text-center py-10">
-              No products yet.
+            <p className="text-slate-400 text-sm text-center py-10">
+              No product data available.
             </p>
           )}
         </div>
 
-        {/* Transaction Breakdown Pie Chart */}
-        <div className="bg-white rounded-xl shadow-sm p-5">
-          <h3 className="text-sm font-semibold text-gray-600 mb-4 uppercase tracking-wide">
+        <div className="bg-white border border-slate-200 rounded-xl p-5">
+          <h3 className="text-xs font-semibold text-slate-500 mb-4 uppercase tracking-wide">
             Transaction Breakdown
           </h3>
           {pieData.length > 0 ? (
@@ -184,49 +206,56 @@ export default function AnalyticsDashboard({ products }: Props) {
                   outerRadius={90}
                   paddingAngle={4}
                   dataKey="value"
-                  label={({ name, percent }) =>
-                    `${name} ${(percent * 100).toFixed(0)}%`
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  label={(props: any) =>
+                    `${props.name ?? ""} ${((props.percent ?? 0) * 100).toFixed(0)}%`
                   }
                 >
                   {pieData.map((entry) => (
                     <Cell
-                      key={entry.name}
-                      fill={TYPE_COLORS[entry.name] || "#94a3b8"}
+                      key={entry.key}
+                      fill={TYPE_COLORS[entry.key] || "#94a3b8"}
                     />
                   ))}
                 </Pie>
-                <Tooltip />
+                <Tooltip
+                  contentStyle={{
+                    borderRadius: "8px",
+                    border: "1px solid #e2e8f0",
+                    fontSize: "12px",
+                  }}
+                />
               </PieChart>
             </ResponsiveContainer>
           ) : (
-            <p className="text-gray-400 text-sm text-center py-10">
-              No transactions yet.
+            <p className="text-slate-400 text-sm text-center py-10">
+              No transactions recorded yet.
             </p>
           )}
         </div>
       </div>
 
-      {/* ── Low Stock Alerts ── */}
+      {/* Low Stock Alerts */}
       {lowStockProducts.length > 0 && (
         <div className="bg-red-50 border border-red-200 rounded-xl p-5">
-          <h3 className="text-sm font-semibold text-red-700 mb-3 uppercase tracking-wide flex items-center gap-2">
-            ⚠️ Low Stock Alerts
+          <h3 className="text-xs font-semibold text-red-700 mb-3 uppercase tracking-wide flex items-center gap-2">
+            <AlertTriangle className="w-3.5 h-3.5" />
+            Low Stock Alerts
           </h3>
           <div className="space-y-2">
             {lowStockProducts.map((p) => (
               <div
                 key={p.barcode}
-                className="flex items-center justify-between bg-white rounded-lg px-4 py-2 shadow-sm"
+                className="flex items-center justify-between bg-white rounded-lg px-4 py-2.5 border border-red-100"
               >
                 <div>
-                  <p className="font-medium text-gray-800">{p.name}</p>
-                  <p className="text-xs text-gray-400">
-                    {p.frontQuantity + p.backQuantity} total (threshold:{" "}
-                    {p.reorderThreshold})
+                  <p className="text-sm font-medium text-slate-900">{p.name}</p>
+                  <p className="text-xs text-slate-400">
+                    {p.frontQuantity + p.backQuantity} total units — threshold: {p.reorderThreshold}
                   </p>
                 </div>
-                <span className="text-xs font-semibold text-red-600 bg-red-100 px-2 py-1 rounded-full">
-                  Restock Now
+                <span className="text-[10px] font-semibold text-red-700 bg-red-100 px-2.5 py-1 rounded-full uppercase tracking-wide">
+                  Reorder
                 </span>
               </div>
             ))}
@@ -234,20 +263,23 @@ export default function AnalyticsDashboard({ products }: Props) {
         </div>
       )}
 
-      {/* ── Recent Activity Feed ── */}
-      <div className="bg-white rounded-xl shadow-sm p-5">
-        <h3 className="text-sm font-semibold text-gray-600 mb-4 uppercase tracking-wide flex items-center gap-2">
-          <Clock className="w-4 h-4" />
+      {/* Activity Feed */}
+      <div className="bg-white border border-slate-200 rounded-xl p-5">
+        <h3 className="text-xs font-semibold text-slate-500 mb-4 uppercase tracking-wide flex items-center gap-2">
+          <Clock className="w-3.5 h-3.5" />
           Recent Activity
         </h3>
         {loading ? (
-          <p className="text-gray-400 text-sm animate-pulse">Loading…</p>
+          <div className="flex items-center justify-center gap-2 py-6">
+            <div className="w-4 h-4 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+            <p className="text-sm text-slate-400">Loading...</p>
+          </div>
         ) : transactions.length === 0 ? (
-          <p className="text-gray-400 text-sm text-center py-6">
+          <p className="text-slate-400 text-sm text-center py-6">
             No transactions recorded yet.
           </p>
         ) : (
-          <div className="divide-y divide-gray-100 max-h-72 overflow-y-auto">
+          <div className="divide-y divide-slate-100 max-h-72 overflow-y-auto">
             {transactions.slice(0, 20).map((t) => (
               <div
                 key={t.id}
@@ -256,30 +288,31 @@ export default function AnalyticsDashboard({ products }: Props) {
                 <span
                   className="p-1.5 rounded-lg"
                   style={{
-                    backgroundColor:
-                      TYPE_COLORS[t.transactionType] + "20",
+                    backgroundColor: TYPE_COLORS[t.transactionType] + "15",
                     color: TYPE_COLORS[t.transactionType],
                   }}
                 >
                   {TYPE_ICONS[t.transactionType]}
                 </span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-gray-800 truncate">
-                    <span className="font-medium">{t.transactionType}</span>
-                    {": "}
+                  <p className="text-slate-800 truncate text-sm">
+                    <span className="font-medium">
+                      {TYPE_LABELS[t.transactionType] || t.transactionType}
+                    </span>
+                    {" — "}
                     {t.productName}{" "}
                     <span
                       className={
-                        t.quantity < 0 ? "text-red-500" : "text-green-500"
+                        t.quantity < 0 ? "text-red-500" : "text-emerald-600"
                       }
                     >
                       ({t.quantity > 0 ? "+" : ""}
                       {t.quantity})
                     </span>
                   </p>
-                  <p className="text-xs text-gray-400">{t.location}</p>
+                  <p className="text-xs text-slate-400">{t.location}</p>
                 </div>
-                <span className="text-xs text-gray-400 shrink-0">
+                <span className="text-xs text-slate-400 shrink-0">
                   {timeAgo(t.createdAt)}
                 </span>
               </div>
@@ -287,6 +320,6 @@ export default function AnalyticsDashboard({ products }: Props) {
           </div>
         )}
       </div>
-    </div>
+    </section>
   );
 }

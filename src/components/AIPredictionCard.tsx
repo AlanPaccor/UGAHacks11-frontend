@@ -58,13 +58,12 @@ export default function AIPredictionCard({ product }: Props) {
 
   if (loading) return null;
 
-  // Not enough data
   if (daysUntilEmpty === null) {
     return (
-      <div className="mt-3 bg-gray-50 border border-gray-200 rounded-lg p-3 flex items-start gap-2">
-        <BrainCircuit className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" />
-        <p className="text-xs text-gray-400">
-          Not enough sales data for AI prediction yet.
+      <div className="mt-3 bg-slate-50 border border-slate-200 rounded-lg p-3 flex items-start gap-2">
+        <BrainCircuit className="w-3.5 h-3.5 text-slate-400 mt-0.5 shrink-0" />
+        <p className="text-[11px] text-slate-400">
+          Insufficient sales data for prediction.
         </p>
       </div>
     );
@@ -75,37 +74,37 @@ export default function AIPredictionCard({ product }: Props) {
 
   return (
     <div
-      className={`mt-3 rounded-lg p-3 flex items-start gap-2 ${
+      className={`mt-3 rounded-lg p-3 flex items-start gap-2 border ${
         isUrgent
-          ? "bg-red-50 border border-red-200"
+          ? "bg-red-50 border-red-200"
           : isWarning
-          ? "bg-amber-50 border border-amber-200"
-          : "bg-blue-50 border border-blue-200"
+          ? "bg-amber-50 border-amber-200"
+          : "bg-slate-50 border-slate-200"
       }`}
     >
       <BrainCircuit
-        className={`w-4 h-4 mt-0.5 shrink-0 ${
+        className={`w-3.5 h-3.5 mt-0.5 shrink-0 ${
           isUrgent
             ? "text-red-500"
             : isWarning
             ? "text-amber-500"
-            : "text-blue-500"
+            : "text-indigo-500"
         }`}
       />
-      <div className="text-xs space-y-1">
+      <div className="text-[11px] space-y-0.5">
         <p
           className={`font-semibold ${
             isUrgent
               ? "text-red-700"
               : isWarning
               ? "text-amber-700"
-              : "text-blue-700"
+              : "text-slate-700"
           }`}
         >
-          🤖 AI Prediction
+          AI Forecast
         </p>
-        <p className="text-gray-600">
-          Avg sales: <strong>{avgDailySales.toFixed(1)}</strong>/day
+        <p className="text-slate-500">
+          Avg. velocity: <strong>{avgDailySales.toFixed(1)}</strong> units/day
         </p>
         <p className="flex items-center gap-1">
           {isUrgent ? (
@@ -113,7 +112,7 @@ export default function AIPredictionCard({ product }: Props) {
           ) : isWarning ? (
             <TrendingDown className="w-3 h-3 text-amber-500" />
           ) : (
-            <CheckCircle className="w-3 h-3 text-green-500" />
+            <CheckCircle className="w-3 h-3 text-emerald-500" />
           )}
           <span
             className={
@@ -121,17 +120,17 @@ export default function AIPredictionCard({ product }: Props) {
                 ? "text-red-600 font-semibold"
                 : isWarning
                 ? "text-amber-600 font-semibold"
-                : "text-gray-600"
+                : "text-slate-600"
             }
           >
             {daysUntilEmpty === 0
-              ? "Empty TODAY — restock immediately!"
-              : `~${daysUntilEmpty} day${daysUntilEmpty !== 1 ? "s" : ""} until empty`}
+              ? "Depleted today — immediate restock required"
+              : `~${daysUntilEmpty} day${daysUntilEmpty !== 1 ? "s" : ""} until depletion`}
           </span>
         </p>
         {isUrgent && (
-          <p className="text-red-600">
-            ⚡ Restock {Math.ceil(avgDailySales * 7)} units for 1 week of cover.
+          <p className="text-red-600 font-medium">
+            Recommended: restock {Math.ceil(avgDailySales * 7)} units for 7-day coverage.
           </p>
         )}
       </div>

@@ -1,4 +1,10 @@
 import { useEffect, useState, useCallback } from "react";
+import {
+  LayoutDashboard,
+  Heart,
+  Map,
+  Package,
+} from "lucide-react";
 import { getProducts } from "./services/api";
 import InventoryManager from "./components/InventoryManager";
 import AnalyticsDashboard from "./components/AnalyticsDashboard";
@@ -22,26 +28,38 @@ function App() {
   }, [fetchProducts]);
 
   return (
-    <div className="min-h-screen bg-gray-100 p-8">
-      {/* ── Top Bar ── */}
-      <div className="flex items-center justify-between max-w-5xl mx-auto mb-8">
-        <h1 className="text-4xl font-bold text-gray-800">
-          🛒 Inventory
-        </h1>
-        <div className="flex gap-3">
-          <button
-            onClick={() => setDonateOpen(true)}
-            className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-emerald-700 transition-colors text-sm"
-          >
-            💚 Donate Waste
-          </button>
-          <button
-            className="flex items-center gap-2 bg-gray-700 text-white px-4 py-2 rounded-lg font-semibold hover:bg-gray-800 transition-colors text-sm"
-          >
-            🗺️ Overview Map
-          </button>
+    <div className="min-h-screen bg-slate-50">
+      {/* ── Navigation Bar ── */}
+      <header className="bg-white border-b border-slate-200 sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
+              <Package className="w-4 h-4 text-white" />
+            </div>
+            <div>
+              <h1 className="text-lg font-bold text-slate-900 leading-tight">
+                StockSync
+              </h1>
+              <p className="text-[10px] text-slate-400 uppercase tracking-widest leading-none">
+                Inventory Management
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setDonateOpen(true)}
+              className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-emerald-700 transition-colors"
+            >
+              <Heart className="w-4 h-4" />
+              <span className="hidden sm:inline">Donate Surplus</span>
+            </button>
+            <button className="flex items-center gap-2 border border-slate-200 text-slate-600 px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors">
+              <Map className="w-4 h-4" />
+              <span className="hidden sm:inline">Overview Map</span>
+            </button>
+          </div>
         </div>
-      </div>
+      </header>
 
       {/* ── Donate Modal ── */}
       {donateOpen && (
@@ -51,78 +69,103 @@ function App() {
         />
       )}
 
-      {/* ── Scanner & Actions ── */}
-      <InventoryManager onTransactionComplete={fetchProducts} />
+      {/* ── Main Content ── */}
+      <main className="max-w-7xl mx-auto px-6 py-8 space-y-8">
+        {/* Scanner & Actions */}
+        <InventoryManager onTransactionComplete={fetchProducts} />
 
-      {/* ── AI Insights (Gemini) ── */}
-      <AIInsightsCard />
+        {/* AI Insights */}
+        <AIInsightsCard />
 
-      {/* ── Analytics Dashboard ── */}
-      <AnalyticsDashboard products={products} />
+        {/* Analytics Dashboard */}
+        <AnalyticsDashboard products={products} />
 
-      {/* ── Product Cards ── */}
-      <div className="max-w-5xl mx-auto">
-        <h2 className="text-2xl font-bold text-gray-800 mb-4">
-          📋 All Products
-        </h2>
-        {products.length === 0 ? (
-          <p className="text-center text-gray-500">Loading products...</p>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {products.map((product) => (
-              <div
-                key={product.barcode}
-                className="bg-white rounded-2xl shadow-md p-6 hover:shadow-lg transition-shadow"
-              >
-                <h2 className="text-xl font-semibold text-gray-800">
-                  {product.name}
-                </h2>
-                <p className="text-sm text-gray-400 mt-1">
-                  Barcode: {product.barcode}
-                </p>
-                <div className="mt-4 space-y-1 text-sm text-gray-600">
-                  <p>
-                    Front:{" "}
-                    <span className="font-medium">
-                      {product.frontQuantity}
-                    </span>
-                  </p>
-                  <p>
-                    Back:{" "}
-                    <span className="font-medium">
-                      {product.backQuantity}
-                    </span>
-                  </p>
-                  <p>
-                    Discard:{" "}
-                    <span className="font-medium">
-                      {product.wasteQuantity}
-                    </span>
-                  </p>
-                </div>
-                <div className="mt-4 flex items-center justify-between">
-                  <span className="text-xs text-gray-400">
-                    Reorder at ≤ {product.reorderThreshold}
-                  </span>
-                  {product.frontQuantity + product.backQuantity <=
-                  product.reorderThreshold ? (
-                    <span className="text-xs font-semibold text-red-600 bg-red-100 px-2 py-1 rounded-full">
-                      Low Stock
-                    </span>
-                  ) : (
-                    <span className="text-xs font-semibold text-green-600 bg-green-100 px-2 py-1 rounded-full">
-                      In Stock
-                    </span>
-                  )}
-                </div>
-
-                {/* ── AI Prediction per product ── */}
-                <AIPredictionCard product={product} />
-              </div>
-            ))}
+        {/* Product Inventory */}
+        <section>
+          <div className="flex items-center gap-2 mb-5">
+            <LayoutDashboard className="w-5 h-5 text-slate-400" />
+            <h2 className="text-lg font-semibold text-slate-900">
+              Product Inventory
+            </h2>
+            <span className="text-xs text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full ml-1">
+              {products.length} items
+            </span>
           </div>
-        )}
-      </div>
+          {products.length === 0 ? (
+            <div className="bg-white border border-slate-200 rounded-xl p-12 text-center">
+              <Package className="w-10 h-10 text-slate-300 mx-auto mb-3" />
+              <p className="text-sm text-slate-400">
+                No products found. Start by adding items through the scanner.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {products.map((product) => (
+                <div
+                  key={product.barcode}
+                  className="bg-white border border-slate-200 rounded-xl p-5 hover:shadow-md transition-shadow"
+                >
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h3 className="text-sm font-semibold text-slate-900">
+                        {product.name}
+                      </h3>
+                      <p className="text-xs text-slate-400 mt-0.5 font-mono">
+                        {product.barcode}
+                      </p>
+                    </div>
+                    {product.frontQuantity + product.backQuantity <=
+                    product.reorderThreshold ? (
+                      <span className="text-[10px] font-semibold text-red-700 bg-red-50 border border-red-200 px-2 py-0.5 rounded-full uppercase tracking-wide">
+                        Low Stock
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full uppercase tracking-wide">
+                        In Stock
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-3 mt-4">
+                    <div className="bg-slate-50 rounded-lg p-2.5 text-center">
+                      <p className="text-[10px] text-slate-400 uppercase tracking-wide font-medium">
+                        Front
+                      </p>
+                      <p className="text-lg font-bold text-slate-900">
+                        {product.frontQuantity}
+                      </p>
+                    </div>
+                    <div className="bg-slate-50 rounded-lg p-2.5 text-center">
+                      <p className="text-[10px] text-slate-400 uppercase tracking-wide font-medium">
+                        Back
+                      </p>
+                      <p className="text-lg font-bold text-slate-900">
+                        {product.backQuantity}
+                      </p>
+                    </div>
+                    <div className="bg-slate-50 rounded-lg p-2.5 text-center">
+                      <p className="text-[10px] text-slate-400 uppercase tracking-wide font-medium">
+                        Discard
+                      </p>
+                      <p className="text-lg font-bold text-red-600">
+                        {product.wasteQuantity}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 pt-3 border-t border-slate-100">
+                    <p className="text-[10px] text-slate-400">
+                      Reorder threshold: {product.reorderThreshold} units
+                    </p>
+                  </div>
+
+                  <AIPredictionCard product={product} />
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      </main>
     </div>
   );
 }
