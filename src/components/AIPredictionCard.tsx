@@ -1,13 +1,15 @@
 import { useEffect, useState } from "react";
 import {
   BrainCircuit,
-  TrendingDown,
+
   AlertTriangle,
   CheckCircle,
   ShoppingCart,
   Trash2,
   PackageOpen,
   AlertCircle,
+  ArrowRightLeft,
+  PackagePlus,
 } from "lucide-react";
 import { getTransactionsByBarcode } from "../services/api";
 import type { Product } from "../types/Product";
@@ -22,9 +24,10 @@ interface Stats {
   totalRestocks: number;
   totalWaste: number;
   totalReceived: number;
-  checkoutVelocity: number | null; // units/day
-  daysUntilEmpty: number | null;
-  wasteRate: number | null; // percentage
+  checkoutVelocity: number | null;
+  daysUntilFrontEmpty: number | null;
+  daysUntilBackEmpty: number | null;
+  wasteRate: number | null;
   daysCovered: number;
 }
 
@@ -42,27 +45,36 @@ function computeStats(
   const totalWaste = waste.reduce((s, t) => s + Math.abs(t.quantity), 0);
   const totalReceived = received.reduce((s, t) => s + Math.abs(t.quantity), 0);
 
-  // Calculate date range across ALL transactions
   const allDates = transactions.map((t) => new Date(t.createdAt).getTime());
   const oldest = Math.min(...allDates);
   const newest = Math.max(...allDates);
   const daysCovered = Math.max(
     (newest - oldest) / (1000 * 60 * 60 * 24),
-    1 // minimum 1 day to avoid division by zero
+    1
   );
 
-  // Checkout velocity (if we have checkout data)
+  // Checkout velocity — front stock is depleted by sales
   let checkoutVelocity: number | null = null;
-  let daysUntilEmpty: number | null = null;
+  let daysUntilFrontEmpty: number | null = null;
 
   if (totalCheckouts > 0) {
     checkoutVelocity = totalCheckouts / daysCovered;
-    const currentStock = product.frontQuantity + product.backQuantity;
-    daysUntilEmpty =
-      checkoutVelocity > 0 ? Math.floor(currentStock / checkoutVelocity) : null;
+    daysUntilFrontEmpty =
+      checkoutVelocity > 0
+        ? Math.floor(product.frontQuantity / checkoutVelocity)
+        : null;
   }
 
-  // Waste rate = waste / (checkouts + waste + current stock on hand)
+  // Back stock depletion — restocks move back→front, so back depletes at restock rate
+  let daysUntilBackEmpty: number | null = null;
+  if (totalRestocks > 0) {
+    const restockVelocity = totalRestocks / daysCovered;
+    daysUntilBackEmpty =
+      restockVelocity > 0
+        ? Math.floor(product.backQuantity / restockVelocity)
+        : null;
+  }
+
   const totalThroughput = totalCheckouts + totalWaste;
   const wasteRate = totalThroughput > 0 ? (totalWaste / totalThroughput) * 100 : null;
 
@@ -72,7 +84,8 @@ function computeStats(
     totalWaste,
     totalReceived,
     checkoutVelocity,
-    daysUntilEmpty,
+    daysUntilFrontEmpty,
+    daysUntilBackEmpty,
     wasteRate,
     daysCovered,
   };
@@ -114,7 +127,6 @@ export default function AIPredictionCard({ product }: Props) {
 
   if (loading) return null;
 
-  // API error
   if (error) {
     return (
       <div className="mt-3 bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-2">
@@ -126,7 +138,6 @@ export default function AIPredictionCard({ product }: Props) {
     );
   }
 
-  // No transactions at all
   if (!stats || txCount === 0) {
     return (
       <div className="mt-3 bg-slate-50 border border-slate-200 rounded-lg p-3 flex items-start gap-2">
@@ -138,37 +149,46 @@ export default function AIPredictionCard({ product }: Props) {
     );
   }
 
-  // Determine urgency
-  const isUrgent = stats.daysUntilEmpty !== null && stats.daysUntilEmpty <= 3;
-  const isWarning = stats.daysUntilEmpty !== null && stats.daysUntilEmpty <= 7;
+  // ── Front stock analysis ──
+  // Front is low if it drops to or below the reorder threshold
+  const frontLow = product.frontQuantity <= product.reorderThreshold;
+  const frontCritical = product.frontQuantity <= Math.ceil(product.reorderThreshold * 0.5);
+  const frontHasBackup = product.backQuantity > 0;
+
+  // ── Back stock analysis ──
+  // Back is low if it drops to or below the reorder threshold
+  const backLow = product.backQuantity <= product.reorderThreshold;
+  const backCritical = product.backQuantity <= Math.ceil(product.reorderThreshold * 0.5);
+
+  // Overall urgency for card styling
+  const hasAnyUrgency = frontCritical || backCritical;
+  const hasAnyWarning = frontLow || backLow;
   const highWaste = stats.wasteRate !== null && stats.wasteRate > 15;
 
-  const borderColor = isUrgent
+  const borderColor = hasAnyUrgency
     ? "bg-red-50 border-red-200"
-    : isWarning || highWaste
+    : hasAnyWarning || highWaste
     ? "bg-amber-50 border-amber-200"
     : "bg-slate-50 border-slate-200";
 
-  const iconColor = isUrgent
+  const iconColor = hasAnyUrgency
     ? "text-red-500"
-    : isWarning || highWaste
+    : hasAnyWarning || highWaste
     ? "text-amber-500"
     : "text-indigo-500";
+
+  const headerColor = hasAnyUrgency
+    ? "text-red-700"
+    : hasAnyWarning || highWaste
+    ? "text-amber-700"
+    : "text-slate-700";
 
   return (
     <div className={`mt-3 rounded-lg p-3 border ${borderColor}`}>
       {/* Header */}
       <div className="flex items-center gap-1.5 mb-2">
         <BrainCircuit className={`w-3.5 h-3.5 ${iconColor}`} />
-        <span
-          className={`text-[11px] font-semibold ${
-            isUrgent
-              ? "text-red-700"
-              : isWarning || highWaste
-              ? "text-amber-700"
-              : "text-slate-700"
-          }`}
-        >
+        <span className={`text-[11px] font-semibold ${headerColor}`}>
           AI Forecast
         </span>
         <span className="text-[10px] text-slate-400 ml-auto">
@@ -213,47 +233,106 @@ export default function AIPredictionCard({ product }: Props) {
         )}
       </div>
 
-      {/* Insights */}
-      <div className="space-y-1 text-[11px]">
-        {/* Checkout velocity & depletion */}
-        {stats.checkoutVelocity !== null && (
-          <p className="text-slate-500">
-            Sales velocity:{" "}
-            <strong className="text-slate-700">
-              {stats.checkoutVelocity.toFixed(1)}
-            </strong>{" "}
-            units/day
-          </p>
-        )}
-
-        {stats.daysUntilEmpty !== null && (
-          <p className="flex items-center gap-1">
-            {isUrgent ? (
-              <AlertTriangle className="w-3 h-3 text-red-500" />
-            ) : isWarning ? (
-              <TrendingDown className="w-3 h-3 text-amber-500" />
-            ) : (
-              <CheckCircle className="w-3 h-3 text-emerald-500" />
-            )}
-            <span
-              className={
-                isUrgent
-                  ? "text-red-600 font-semibold"
-                  : isWarning
-                  ? "text-amber-600 font-semibold"
-                  : "text-slate-600"
-              }
-            >
-              {stats.daysUntilEmpty === 0
-                ? "Depleted today — immediate restock required"
-                : `~${stats.daysUntilEmpty} day${stats.daysUntilEmpty !== 1 ? "s" : ""} until depletion`}
+      {/* ── Front Store Status ── */}
+      <div className="space-y-1.5 text-[11px]">
+        <div className={`rounded-md px-2.5 py-2 ${
+          frontCritical
+            ? "bg-red-100/60"
+            : frontLow
+            ? "bg-amber-100/60"
+            : "bg-emerald-100/40"
+        }`}>
+          <div className="flex items-center gap-1.5 mb-0.5">
+            <ShoppingCart className={`w-3 h-3 ${
+              frontCritical ? "text-red-500" : frontLow ? "text-amber-500" : "text-emerald-500"
+            }`} />
+            <span className="font-semibold text-slate-700">Front Shelves</span>
+            <span className={`ml-auto text-[10px] font-bold ${
+              frontCritical ? "text-red-600" : frontLow ? "text-amber-600" : "text-emerald-600"
+            }`}>
+              {product.frontQuantity} units
             </span>
-          </p>
-        )}
+          </div>
+          {frontCritical ? (
+            <div className="flex items-start gap-1 mt-1">
+              <AlertTriangle className="w-3 h-3 text-red-500 shrink-0 mt-0.5" />
+              <span className="text-red-600 font-semibold">
+                Critically low — {frontHasBackup
+                  ? `restock from back storage immediately (${product.backQuantity} available)`
+                  : "no back stock available, reorder from supplier"}
+              </span>
+            </div>
+          ) : frontLow ? (
+            <div className="flex items-start gap-1 mt-1">
+              <ArrowRightLeft className="w-3 h-3 text-amber-500 shrink-0 mt-0.5" />
+              <span className="text-amber-600 font-semibold">
+                Running low — {frontHasBackup
+                  ? `restock from back storage (${product.backQuantity} available)`
+                  : "no back stock, consider reordering"}
+              </span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1 mt-0.5">
+              <CheckCircle className="w-3 h-3 text-emerald-500" />
+              <span className="text-slate-500">Shelves well-stocked</span>
+            </div>
+          )}
+          {stats.daysUntilFrontEmpty !== null && stats.checkoutVelocity !== null && (
+            <p className="text-slate-500 mt-0.5 pl-4">
+              At {stats.checkoutVelocity.toFixed(1)} sales/day, front shelves empty in ~{stats.daysUntilFrontEmpty} day{stats.daysUntilFrontEmpty !== 1 ? "s" : ""}
+            </p>
+          )}
+        </div>
 
-        {/* Waste rate */}
+        {/* ── Back Storage Status ── */}
+        <div className={`rounded-md px-2.5 py-2 ${
+          backCritical
+            ? "bg-red-100/60"
+            : backLow
+            ? "bg-amber-100/60"
+            : "bg-emerald-100/40"
+        }`}>
+          <div className="flex items-center gap-1.5 mb-0.5">
+            <PackageOpen className={`w-3 h-3 ${
+              backCritical ? "text-red-500" : backLow ? "text-amber-500" : "text-emerald-500"
+            }`} />
+            <span className="font-semibold text-slate-700">Back Storage</span>
+            <span className={`ml-auto text-[10px] font-bold ${
+              backCritical ? "text-red-600" : backLow ? "text-amber-600" : "text-emerald-600"
+            }`}>
+              {product.backQuantity} units
+            </span>
+          </div>
+          {backCritical ? (
+            <div className="flex items-start gap-1 mt-1">
+              <AlertTriangle className="w-3 h-3 text-red-500 shrink-0 mt-0.5" />
+              <span className="text-red-600 font-semibold">
+                Critically low — reorder from supplier immediately
+              </span>
+            </div>
+          ) : backLow ? (
+            <div className="flex items-start gap-1 mt-1">
+              <PackagePlus className="w-3 h-3 text-amber-500 shrink-0 mt-0.5" />
+              <span className="text-amber-600 font-semibold">
+                Running low — place a supplier reorder soon
+              </span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1 mt-0.5">
+              <CheckCircle className="w-3 h-3 text-emerald-500" />
+              <span className="text-slate-500">Storage well-stocked</span>
+            </div>
+          )}
+          {stats.daysUntilBackEmpty !== null && (
+            <p className="text-slate-500 mt-0.5 pl-4">
+              At current restock rate, back storage empty in ~{stats.daysUntilBackEmpty} day{stats.daysUntilBackEmpty !== 1 ? "s" : ""}
+            </p>
+          )}
+        </div>
+
+        {/* ── Waste Rate ── */}
         {stats.wasteRate !== null && (
-          <p className="flex items-center gap-1">
+          <p className="flex items-center gap-1 pt-0.5">
             {highWaste ? (
               <AlertTriangle className="w-3 h-3 text-amber-500" />
             ) : (
@@ -268,12 +347,28 @@ export default function AIPredictionCard({ product }: Props) {
           </p>
         )}
 
-        {/* Urgent restock recommendation */}
-        {isUrgent && stats.checkoutVelocity && (
-          <p className="text-red-600 font-medium pt-0.5">
-            Recommended: restock{" "}
-            {Math.ceil(stats.checkoutVelocity * 7)} units for 7-day coverage.
-          </p>
+        {/* ── Recommended action summary ── */}
+        {(frontLow || backLow) && stats.checkoutVelocity && (
+          <div className="border-t border-slate-200/50 pt-1.5 mt-1">
+            <p className="text-[10px] text-slate-400 uppercase tracking-wide font-medium mb-0.5">
+              Recommended Action
+            </p>
+            {frontLow && frontHasBackup && (
+              <p className="text-indigo-600 font-medium flex items-center gap-1">
+                <ArrowRightLeft className="w-3 h-3" />
+                Restock shelves: move {Math.min(
+                  Math.ceil(stats.checkoutVelocity * 7),
+                  product.backQuantity
+                )} units from back to front for 7-day cover
+              </p>
+            )}
+            {backLow && (
+              <p className="text-amber-600 font-medium flex items-center gap-1">
+                <PackagePlus className="w-3 h-3" />
+                Reorder: order ~{Math.ceil(stats.checkoutVelocity * 14)} units from supplier for 2-week cover
+              </p>
+            )}
+          </div>
         )}
       </div>
     </div>

@@ -15,7 +15,7 @@ import StoreCanvas from "../components/floorview/StoreCanvas";
 import Legend from "../components/floorview/Legend";
 import FloorFilters from "../components/floorview/FloorFilters";
 import ProductDetailModal from "../components/floorview/ProductDetailModal";
-import { getStockStatus } from "../components/floorview/ProductDot";
+import { getStockStatus, getStockAdvice } from "../components/floorview/ProductDot";
 import type { ProductPosition } from "../components/floorview/ProductDot";
 import type { FilterState } from "../components/floorview/FloorFilters";
 import type { Product } from "../types/Product";
@@ -128,6 +128,8 @@ export default function FloorView() {
     showCriticalOnly: false,
     showHeatmap: false,
     selectedZone: "ALL",
+    showNeedsRestock: false,
+    showNeedsReorder: false,
   });
 
   const fetchProducts = useCallback(() => {
@@ -156,6 +158,14 @@ export default function FloorView() {
       result = result.filter((p) => getStockStatus(p.product) === "critical");
     }
 
+    if (filters.showNeedsRestock) {
+      result = result.filter((p) => getStockAdvice(p.product).needsRestock);
+    }
+
+    if (filters.showNeedsReorder) {
+      result = result.filter((p) => getStockAdvice(p.product).needsReorder);
+    }
+
     if (filters.selectedZone !== "ALL") {
       result = result.filter((p) => p.zone === filters.selectedZone);
     }
@@ -165,9 +175,13 @@ export default function FloorView() {
 
   // Counts
   const counts = useMemo(() => {
-    const c = { healthy: 0, low: 0, critical: 0 };
+    const c = { healthy: 0, low: 0, critical: 0, needsRestock: 0, needsReorder: 0 };
     allPositions.forEach((p) => {
-      c[getStockStatus(p.product)]++;
+      const status = getStockStatus(p.product);
+      c[status]++;
+      const advice = getStockAdvice(p.product);
+      if (advice.needsRestock) c.needsRestock++;
+      if (advice.needsReorder) c.needsReorder++;
     });
     return c;
   }, [allPositions]);

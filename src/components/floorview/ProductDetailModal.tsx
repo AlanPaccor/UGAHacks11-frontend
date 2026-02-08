@@ -1,5 +1,14 @@
-import { X, ShoppingCart, PackagePlus, ArrowRightLeft, Trash2 } from "lucide-react";
-import { getStockStatus } from "./ProductDot";
+import {
+  X,
+  ShoppingCart,
+  PackagePlus,
+  ArrowRightLeft,
+  Trash2,
+  AlertTriangle,
+  CheckCircle,
+  PackageOpen,
+} from "lucide-react";
+import { getStockAdvice } from "./ProductDot";
 import type { Product } from "../../types/Product";
 
 interface Props {
@@ -23,8 +32,8 @@ const STATUS_BADGE: Record<string, { label: string; cls: string }> = {
 };
 
 export default function ProductDetailModal({ product, onClose }: Props) {
-  const status = getStockStatus(product);
-  const badge = STATUS_BADGE[status];
+  const advice = getStockAdvice(product);
+  const badge = STATUS_BADGE[advice.overall];
   const total = product.frontQuantity + product.backQuantity;
 
   return (
@@ -61,19 +70,43 @@ export default function ProductDetailModal({ product, onClose }: Props) {
 
           {/* Stock levels */}
           <div className="grid grid-cols-3 gap-3">
-            <div className="bg-slate-50 border border-slate-100 rounded-lg p-3 text-center">
+            <div className={`border rounded-lg p-3 text-center ${
+              advice.frontStatus === "critical"
+                ? "bg-red-50 border-red-200"
+                : advice.frontStatus === "low"
+                ? "bg-amber-50 border-amber-200"
+                : "bg-slate-50 border-slate-100"
+            }`}>
               <p className="text-[10px] text-slate-400 uppercase tracking-wide font-medium">
                 Front
               </p>
-              <p className="text-xl font-bold text-slate-900 mt-0.5">
+              <p className={`text-xl font-bold mt-0.5 ${
+                advice.frontStatus === "critical"
+                  ? "text-red-600"
+                  : advice.frontStatus === "low"
+                  ? "text-amber-600"
+                  : "text-slate-900"
+              }`}>
                 {product.frontQuantity}
               </p>
             </div>
-            <div className="bg-slate-50 border border-slate-100 rounded-lg p-3 text-center">
+            <div className={`border rounded-lg p-3 text-center ${
+              advice.backStatus === "critical"
+                ? "bg-red-50 border-red-200"
+                : advice.backStatus === "low"
+                ? "bg-amber-50 border-amber-200"
+                : "bg-slate-50 border-slate-100"
+            }`}>
               <p className="text-[10px] text-slate-400 uppercase tracking-wide font-medium">
                 Back
               </p>
-              <p className="text-xl font-bold text-slate-900 mt-0.5">
+              <p className={`text-xl font-bold mt-0.5 ${
+                advice.backStatus === "critical"
+                  ? "text-red-600"
+                  : advice.backStatus === "low"
+                  ? "text-amber-600"
+                  : "text-slate-900"
+              }`}>
                 {product.backQuantity}
               </p>
             </div>
@@ -84,6 +117,83 @@ export default function ProductDetailModal({ product, onClose }: Props) {
               <p className="text-xl font-bold text-red-600 mt-0.5">
                 {product.wasteQuantity}
               </p>
+            </div>
+          </div>
+
+          {/* ── Front / Back Advice ── */}
+          <div className="space-y-2">
+            {/* Front shelves */}
+            <div className={`rounded-lg px-3 py-2.5 border ${
+              advice.frontStatus === "critical"
+                ? "bg-red-50 border-red-200"
+                : advice.frontStatus === "low"
+                ? "bg-amber-50 border-amber-200"
+                : "bg-emerald-50/50 border-emerald-200"
+            }`}>
+              <div className="flex items-center gap-1.5 text-xs">
+                <ShoppingCart className={`w-3.5 h-3.5 ${
+                  advice.frontStatus === "critical"
+                    ? "text-red-500"
+                    : advice.frontStatus === "low"
+                    ? "text-amber-500"
+                    : "text-emerald-500"
+                }`} />
+                <span className="font-semibold text-slate-700">Front Shelves</span>
+              </div>
+              {advice.frontAdvice ? (
+                <div className="flex items-start gap-1.5 mt-1.5">
+                  <AlertTriangle className={`w-3 h-3 shrink-0 mt-0.5 ${
+                    advice.frontStatus === "critical" ? "text-red-500" : "text-amber-500"
+                  }`} />
+                  <p className={`text-[11px] font-medium ${
+                    advice.frontStatus === "critical" ? "text-red-600" : "text-amber-600"
+                  }`}>
+                    {advice.frontAdvice}
+                  </p>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1.5 mt-1">
+                  <CheckCircle className="w-3 h-3 text-emerald-500" />
+                  <p className="text-[11px] text-slate-500">Shelves well-stocked</p>
+                </div>
+              )}
+            </div>
+
+            {/* Back storage */}
+            <div className={`rounded-lg px-3 py-2.5 border ${
+              advice.backStatus === "critical"
+                ? "bg-red-50 border-red-200"
+                : advice.backStatus === "low"
+                ? "bg-amber-50 border-amber-200"
+                : "bg-emerald-50/50 border-emerald-200"
+            }`}>
+              <div className="flex items-center gap-1.5 text-xs">
+                <PackageOpen className={`w-3.5 h-3.5 ${
+                  advice.backStatus === "critical"
+                    ? "text-red-500"
+                    : advice.backStatus === "low"
+                    ? "text-amber-500"
+                    : "text-emerald-500"
+                }`} />
+                <span className="font-semibold text-slate-700">Back Storage</span>
+              </div>
+              {advice.backAdvice ? (
+                <div className="flex items-start gap-1.5 mt-1.5">
+                  <AlertTriangle className={`w-3 h-3 shrink-0 mt-0.5 ${
+                    advice.backStatus === "critical" ? "text-red-500" : "text-amber-500"
+                  }`} />
+                  <p className={`text-[11px] font-medium ${
+                    advice.backStatus === "critical" ? "text-red-600" : "text-amber-600"
+                  }`}>
+                    {advice.backAdvice}
+                  </p>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1.5 mt-1">
+                  <CheckCircle className="w-3 h-3 text-emerald-500" />
+                  <p className="text-[11px] text-slate-500">Storage well-stocked</p>
+                </div>
+              )}
             </div>
           </div>
 
@@ -105,9 +215,9 @@ export default function ProductDetailModal({ product, onClose }: Props) {
                 <div className="w-20 h-1.5 bg-slate-100 rounded-full overflow-hidden">
                   <div
                     className={`h-full rounded-full ${
-                      status === "critical"
+                      advice.overall === "critical"
                         ? "bg-red-500"
-                        : status === "low"
+                        : advice.overall === "low"
                         ? "bg-amber-500"
                         : "bg-emerald-500"
                     }`}

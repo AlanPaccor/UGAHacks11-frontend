@@ -1,9 +1,11 @@
-import { Eye, EyeOff, Flame, Layers } from "lucide-react";
+import { Eye, EyeOff, Flame, Layers, ArrowRightLeft, PackagePlus } from "lucide-react";
 
 export interface FilterState {
   showCriticalOnly: boolean;
   showHeatmap: boolean;
   selectedZone: string;
+  showNeedsRestock: boolean;
+  showNeedsReorder: boolean;
 }
 
 interface Props {
@@ -36,6 +38,36 @@ export default function FloorFilters({ filters, onChange, zones }: Props) {
           <EyeOff className="w-3.5 h-3.5" />
         )}
         Critical only
+      </button>
+
+      {/* Needs Restock filter */}
+      <button
+        onClick={() =>
+          onChange({ ...filters, showNeedsRestock: !filters.showNeedsRestock })
+        }
+        className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium border transition-colors ${
+          filters.showNeedsRestock
+            ? "bg-indigo-50 border-indigo-200 text-indigo-700"
+            : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
+        }`}
+      >
+        <ArrowRightLeft className="w-3.5 h-3.5" />
+        Needs restock
+      </button>
+
+      {/* Needs Reorder filter */}
+      <button
+        onClick={() =>
+          onChange({ ...filters, showNeedsReorder: !filters.showNeedsReorder })
+        }
+        className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium border transition-colors ${
+          filters.showNeedsReorder
+            ? "bg-amber-50 border-amber-200 text-amber-700"
+            : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
+        }`}
+      >
+        <PackagePlus className="w-3.5 h-3.5" />
+        Needs reorder
       </button>
 
       {/* Heatmap toggle */}
